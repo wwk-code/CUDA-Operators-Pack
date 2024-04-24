@@ -1,0 +1,1 @@
+-I/root/Projects/cuda/my_top_k/include -isystem "/usr/local/cuda-12.3/include"
