@@ -35,12 +35,7 @@ void serial_convolution(element_type *in,element_type *out,element_type *kernel,
             }
         }
     }
-
-
-
 }
-
-
 
 
 
