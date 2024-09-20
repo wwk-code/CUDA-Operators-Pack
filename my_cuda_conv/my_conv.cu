@@ -39,148 +39,70 @@ void serial_convolution(element_type *in,element_type *out,element_type *kernel,
 
 
 
+// 假设 Channel 数目均为1,且所有的ThreadBlock恰好能对original matrix进行加载并运算,避免了shape不匹配时复杂情况的 TB 额外处理
+// 这里注意:  target matrix 的size一定 <= org matrix,因此如果所有 TB 能保证覆盖到 org matrix,也一定可以覆盖到 tgt matrix
 template <
-    const int BLOCK_SIZE_ROW,
+    const int BLOCK_SIZE_ROW,   // 一个ThreadBlock负责加载的 orgMatrix 的行数
     const int BLOCK_SIZE_COL,
-    const int THREAD_SIZE_ROW,
-    const int THREAD_SIZEZ_COL,
-    const int FILTER_SIZE>
+    const int FILTER_SIZE,
+    const int TGT_BLOCK_SIZE_ROW,   // 一个ThreadBlock负责运算的的 targetMatrix 的行数
+    const int TGT_BLOCK_SIZE_COL,
+    const int fillRowOffset,    // 对 org matrix 进行零填充的行数
+    const int fillColOffset
+    >    // 假设 Filter 是方针，这里是其边长
 __global__ void v2_convolution(element_type *org,
                                element_type *target,
                                element_type *filter,  // assume that filter kernel is a square matrix
                                int row, int col)  // row and col are the org mat's attributes
 {
-    // block id 与 thread id的读取与计算 分块是对target矩阵去分的
+    // block id 与 thread id的读取与计算 分块是对 target 矩阵去分的
     int block_row = blockIdx.y;
     int block_col = blockIdx.x;
-    int thread_row = threadIdx.y, thread_col = threadIdx.x, tid = thread_row * THREAD_SIZE_ROW + thread_col;
+    int thread_row = threadIdx.y, thread_col = threadIdx.x, tid = thread_row * BLOCK_SIZE_COL + thread_col;
     // 目标矩阵尺寸
     int t_row = row - FILTER_SIZE + 1, t_col = col - FILTER_SIZE + 1;
     // 分块边界
-    int row_boundary = t_row / BLOCK_SIZE_ROW - 1, col_boundary = t_col / BLOCK_SIZE_COL - 1;
-    int row_edge = t_row % BLOCK_SIZE_ROW, col_edge = t_col % BLOCK_SIZE_COL;
+    int row_boundary = row / BLOCK_SIZE_ROW - 1, col_boundary = col / BLOCK_SIZE_COL - 1;
+    // 还差多少行和多少列，需要处于边界的那个threadBlock去额外处理
+    int row_edge = row % BLOCK_SIZE_ROW, col_edge = col % BLOCK_SIZE_COL;
 
-    if (block_row == 0 && block_col == 0 && thread_row == 0 && thread_col == 0)
-        printf("filter0:%.2f\n", filter[0]);
     // 转移存储 GMEM --> SMEM
-    // __shared__ float s_filter[filter_size][filter_size];
-    // __shared__ float s_org[BLOCK_SIZE_ROW + filter_size - 1][BLOCK_SIZE_COL + filter_size - 1];
     __shared__ float s_filter[FILTER_SIZE][FILTER_SIZE];
     __shared__ float s_org[BLOCK_SIZE_ROW + FILTER_SIZE - 1][BLOCK_SIZE_COL + FILTER_SIZE - 1];
-    int begin_pos = block_row * BLOCK_SIZE_ROW * col + block_col * BLOCK_SIZE_COL * row; // 当前block的起始位置
-    // 右下角元素负责filter_size^2的元素转移
-    if (thread_row == BLOCK_SIZE_ROW - 1 && thread_col == BLOCK_SIZE_COL - 1)
-    {
-        for (int i = 0; i < FILTER_SIZE; i++)
-        {
-            for (int j = 0; j < FILTER_SIZE; j++)
-            {
-                s_org[thread_row + i][thread_col + j] =
-                    org[begin_pos + OFFSET(thread_row + i, thread_col + j, col)];
-            }
-        }
-    }
-    else if (thread_row == BLOCK_SIZE_ROW - 1) // 下边界向外延伸
-    {
-        for (int i = 0; i < FILTER_SIZE; i++)
-        {
-            s_org[thread_row + i][thread_col] =
-                org[begin_pos + OFFSET(thread_row + i, thread_col, col)];
-        }
-    }
-    else if (thread_col == BLOCK_SIZE_COL - 1) // 右边界向外延伸
-    {
-        for (int i = 0; i < FILTER_SIZE; i++)
-        {
-            s_org[thread_row][thread_col + i] =
-                org[begin_pos + OFFSET(thread_row, thread_col + i, col)];
-        }
-    }
-    else // 边界内只需负责转移自身数据
-    {
-        s_org[thread_row][thread_col] =
-            org[begin_pos + OFFSET(thread_row, thread_col, col)];
-        // 0号线程同时转移filter
-        if (thread_row == 0 && thread_col == 0)
-        {
-            for (int i = 0; i < FILTER_SIZE; i++)
-            {
-                for (int j = 0; j < FILTER_SIZE; j++)
-                {
-                    s_filter[i][j] = filter[OFFSET(i, j, FILTER_SIZE)];
-                }
-            }
-        }
-    }
+    __shared__ float s_tgt[TGT_BLOCK_SIZE_ROW][TGT_BLOCK_SIZE_COL];
+
+    // 这个threadBlock块相对于 orgMatrix 的起始位置
+    int orgBeginPos = OFFSET(block_row * BLOCK_SIZE_ROW,block_col * BLOCK_SIZE_COL,col);
+
+    s_org[thread_row][thread_col] = org[orgBeginPos + OFFSET(thread_row,thread_col,BLOCK_SIZE_COL)];
+    if(thread_row < FILTER_SIZE && thread_col < FILTER_SIZE) s_filter[thread_row][thread_col] = filter[thread_row][thread_col];
 
     __syncthreads();
 
     // 计算部分
-    if (block_row == row_boundary && block_col == col_boundary) // 最右下角的 负责处理edge部分
-    {
-        if (thread_row < row_edge && thread_col < col_edge)
-        {
-            int value = 0;
-            // single_conv(FILTER_SIZE, s_org, target, s_filter, begin_pos, thread_row, thread_col, t_col);
-            for (int i = 0; i < FILTER_SIZE; i++)
-            {
-                for (int j = 0; j < FILTER_SIZE; j++)
-                {
-                    value += s_org[thread_row + i][thread_col + j] * s_filter[thread_row + i][thread_col + j];
-                }
-            }
-            target[begin_pos + OFFSET(thread_row, thread_col, t_col)] = value;
-        }
-    }
-    else if (block_row == row_boundary) // 下边一条的edge
-    {
-        if (thread_row < row_edge)
-        {
-            int value = 0;
-            // single_conv(FILTER_SIZE, s_org, target, s_filter, begin_pos, thread_row, thread_col, t_col);
-            for (int i = 0; i < FILTER_SIZE; i++)
-            {
-                for (int j = 0; j < FILTER_SIZE; j++)
-                {
-                    value += s_org[thread_row + i][thread_col + j] * s_filter[thread_row + i][thread_col + j];
-                }
-            }
-            target[begin_pos + OFFSET(thread_row, thread_col, t_col)] = value;
-        }
-    }
-    else if (block_col == col_boundary) // 右边一条的edge
-    {
-        if (thread_col < col_edge)
-        {
-            int value = 0;
-            // single_conv(FILTER_SIZE, s_org, target, s_filter, begin_pos, thread_row, thread_col, t_col);
-            for (int i = 0; i < FILTER_SIZE; i++)
-            {
-                for (int j = 0; j < FILTER_SIZE; j++)
-                {
-                    value += s_org[thread_row + i][thread_col + j] * s_filter[thread_row + i][thread_col + j];
-                }
-            }
-            target[begin_pos + OFFSET(thread_row, thread_col, t_col)] = value;
-        }
-    }
-    else // 正常block
-    {
-        float value = 0;
-        // single_conv(FILTER_SIZE, s_org, target, s_filter, begin_pos, thread_row, thread_col, t_col);
-        for (int i = 0; i < FILTER_SIZE; i++)
-        {
-            for (int j = 0; j < FILTER_SIZE; j++)
-            {
-                // if (block_row == 13 && block_col == 11 && thread_row == 0 && thread_col == 0)
-                //     printf("%d %d %.2f * %.2f\n", thread_row + i, thread_col + j, s_org[thread_row + i][thread_col + j], s_filter[i][j]);
-                value += s_org[thread_row + i][thread_col + j] * s_filter[i][j];
+    // 此线程在全局Org Matrix中的绝对行/列
+    int globalOrgThreadRow = block_row * BLOCK_SIZE_ROW + thread_row, globalOrgThreadCol = block_col * BLOCK_SIZE_COL + thread_col;
+    float val = 0;
+    // 现在 (globalOrgThreadRow-fillRowOffset) 和 (globalOrgThreadCol-fillColOffset) 就是此线程负责的 tgt matrix 中的绝对行列位置
+    if(globalOrgThreadRow >= fillRowOffset && globalOrgThreadRow < (row-fillRowOffset)  && globalOrgThreadCol > fillColOffset && globalOrgThreadCol < (col - fillColOffset)) {
+        int globalTgtThreadRow = (globalOrgThreadRow-fillRowOffset), globalTgtThreadCol = (globalOrgThreadCol-fillColOffset);        
+        for(int i = 0;i < FILTER_SIZE; i++) {
+            for(int j = 0;j < FILTER_SIZE; j++) {
+                // 这里有问题,在sharedMemory中使用了全局坐标
+                val += s_filter[i][j] * s_org[globalOrgThreadRow-(FILTER_SIZE/2) + i][globalOrgThreadCol-(FILTER_SIZE/2) + j];
             }
         }
-        target[begin_pos + OFFSET(thread_row, thread_col, t_col)] = value;
-        // if (block_row == 0 && block_col == 0 && thread_row == 0 && thread_col == 0)
-        // printf("%d-%d.%d-%d : %.2f\n", block_row, block_col, thread_row, thread_col, value);
+        s_tgt[globalTgtThreadRow][globalTgtThreadCol] = val;
+    }   
+
+    __syncthreads();
+
+    // SMem -> GMem
+    if(globalOrgThreadRow >= fillRowOffset && globalOrgThreadRow < (row-fillRowOffset)  && globalOrgThreadCol > fillColOffset && globalOrgThreadCol < (col - fillColOffset)) {
+        int globalTgtThreadRow = (globalOrgThreadRow-fillRowOffset), globalTgtThreadCol = (globalOrgThreadCol-fillColOffset);        
+        tgt[OFFSET(globalTgtThreadRow,globalTgtThreadCol,TGT_BLOCK_SIZE_COL)] = s_tgt[globalTgtThreadRow][globalTgtThreadCol];
     }
+
 }
 
 
