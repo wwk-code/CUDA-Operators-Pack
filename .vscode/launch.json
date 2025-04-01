@@ -1,0 +1,84 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        //////////////////////////////////////////////////   Python debug configuration ////////////////////////////////////////
+        {
+            "name": "Python: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}", // 当前打开的文件
+            // "cwd": "/root/projects/SNPE/tinyBERT",
+            "cwd": "${fileDirname}",
+            // "console": "integratedTerminal", // 使用集成终端
+            "justMyCode": false, // 仅调试用户代码
+            // "debugAdapterPath": "/data/workspace/anaconda/envs/HupuKiller/lib/python3.10/site-packages/debugpy"
+        },
+        //////////////////////////////////////////////////   HupuKiller Python debug configuration ////////////////////////////////////////
+        {
+            "name": "Python: Bert Fine-Tuning",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}", 
+            "cwd": "${fileDirname}", 
+            "args": [
+                "--model_name_or_path", "/root/.cache/huggingface/hub/models--google-bert--bert-base-chinese/snapshots/c30a6ed22ab4564dc1e3b2ecbf6e766b0611a33f",
+                "--train_file", "/data/workspace/projects/HupuKiller/assets/distilBert/datas/train.json",
+                "--validation_file", "/data/workspace/projects/HupuKiller/assets/distilBert/datas/evaluation.json",
+                "--text_column_names", "text",
+                "--label_column_name", "label",
+                "--max_seq_length", "256",
+                "--output_dir", "/data/workspace/projects/HupuKiller/outputs/DistilBert/fineTune",
+                "--overwrite_output_dir", "True",
+                "--do_train", "True",
+                "--do_eval", "True",
+                "--per_device_train_batch_size", "1",
+                "--per_device_eval_batch_size", "1",
+                "--gradient_accumulation_steps", "4",
+                "--learning_rate", "2e-5",
+                "--weight_decay", "0.01",
+                "--num_train_epochs", "20",
+                "--lr_scheduler_type", "linear",
+                "--warmup_ratio", "0.1",
+                "--log_level", "info",
+                "--logging_dir", "/data/workspace/projects/HupuKiller/outputs/DistilBert/fineTune", // 需要指定一个具体的日志目录
+                "--eval_strategy", "steps",
+                "--eval_steps", "100",
+                "--logging_strategy", "steps",
+                "--logging_steps", "100",
+                "--save_strategy", "steps",
+                "--save_steps", "100",
+                "--save_total_limit", "3",
+                "--bf16", "True",
+                "--tf32", "True",
+                "--dataloader_num_workers", "1",
+                "--load_best_model_at_end", "True",
+                "--preprocessing_num_workers", "1",
+                "--shuffle_train_dataset", "True"
+            ],
+            "justMyCode": false // 调试时包括库代码
+        },
+        {
+            "name": "C++: Debug DilstilBert_tensorrt",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/data/workspace/projects/HupuKiller/src/cpp/tensorrt/build/DistilBertInference", // 可执行文件的路径
+            "args": [], // 传递给程序的参数
+            "stopAtEntry": false, // 是否在入口处停止
+            "cwd": "${fileDirname}", // 切换到当前cpp文件所在的目录
+            "environment": [],
+            "externalConsole": false, // 是否使用外部终端
+            "console": "integratedTerminal", // 使用集成终端
+            "MIMode": "gdb", // 使用gdb调试器
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            // "preLaunchTask": "build", // 在调试前执行的任务
+            "miDebuggerPath": "/usr/bin/gdb" // gdb的路径
+            // "postDebugTask": "clean" // 调试后执行的任务
+        }
+    ]
+}
