@@ -81,7 +81,7 @@ void test_cublas(cublasHandle_t handle, INT M, INT N, INT K, FLOAT alpha, FLOAT 
 
 void test_mysgemm_v1(INT M, INT N, INT K,FLOAT alpha, FLOAT *A, FLOAT *B, FLOAT beta, FLOAT *C) {
     cudaDeviceSynchronize();
-    dim3 blockDim(32,32);
+    dim3 blockDim(32,32);  
     dim3 gridDim(CEIL_DIV(M,32),CEIL_DIV(N,32));
     mysgemm_v1<<<gridDim,blockDim>>>(M,N,K,alpha,A,B,beta,C);
     cudaDeviceSynchronize();

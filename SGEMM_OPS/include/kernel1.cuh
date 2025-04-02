@@ -12,16 +12,13 @@ void mysgemm_v1(int M,int N,int K,float alpha,float *A,float *B, float beta,floa
     int lda = M, ldb = N, ldc = M;   // 其实限定了　
     int tx = threadIdx.x, ty = threadIdx.y; 
     int bx = blockIdx.x, by = blockIdx.y;
-
     A = &A((bx<<5),0);
     B = &B(0,(by<<5));
     C = &C((bx<<5),(by<<5));
-
     float temp = 0.;   
     for(int k_count = 0; k_count < K; k_count++) {
         temp += A(tx,k_count) * B(k_count,ty);
     }
     C(tx,ty) = alpha * temp + beta*C(tx,ty);   // 就是 SGEMM 的公式
 }
-
 

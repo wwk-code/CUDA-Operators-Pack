@@ -79,6 +79,26 @@
             // "preLaunchTask": "build", // 在调试前执行的任务
             "miDebuggerPath": "/usr/bin/gdb" // gdb的路径
             // "postDebugTask": "clean" // 调试后执行的任务
+        },
+        {
+            "name": "CUDA Debug",
+            "type": "cuda-gdb",
+            "MIMode": "cuda-gdb",
+            "request": "launch",
+            "program": "${workspaceFolder}/CUDA_Practices/outputs/app",
+            // "program": "/data/workspace/tmp/vector_add",
+            "preLaunchTask": "build cuda program",
+            "args": ["2"],
+            "miDebuggerPath": "/usr/local/cuda-12.6/bin/cuda-gdb",
+            "environment": [{"name": "NSIGHT_CUDA_DEBUGGER", "value": "1"},{"name": "CUDA_VISIBLE_DEVICES", "value": "0"}],
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for cuda-gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+            // "externalConsole": false
         }
     ]
 }

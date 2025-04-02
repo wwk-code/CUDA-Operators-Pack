@@ -1,0 +1,15 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build cuda program",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-c",
+                "cd /data/workspace/projects/CUDA-Operators-Pack/CUDA_Practices && rm outputs/* && make "
+            ],
+            "problemMatcher": []
+        }
+    ]
+}

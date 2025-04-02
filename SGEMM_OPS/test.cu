@@ -11,6 +11,7 @@
 
 #define MYSGEMM mysgemm_naive  // slect the kernel here
 
+
 int main(int argc, char **argv) {
     if(argc != 2) {
         printf("Please select a kernel (range 0 - 11, here 0 is for NVIDIA cuBLAS).\n");
@@ -54,7 +55,7 @@ int main(int argc, char **argv) {
     CUDA_CALLER(cudaMemcpy(dC,C,sizeof(FLOAT)*max_size*max_size,cudaMemcpyHostToDevice));
     CUDA_CALLER(cudaMemcpy(dC_ref,C_ref,sizeof(FLOAT)*max_size*max_size,cudaMemcpyHostToDevice));
 
-    for(int i_count = 0; i_count <upper_limit; i_count++) {
+    for(int i_count = 0; i_count < upper_limit; i_count++) {
         m=n=k=SIZE[i_count];
         printf("\nM=N=K=%d:\n",m);
         if(kernel_num != 0) {
@@ -100,9 +101,10 @@ int main(int argc, char **argv) {
     cudaFree(dC);
     cudaFree(dC_ref);
     cudaDeviceSynchronize();
-    return 0;
-}
 
+    return 0;
+
+}
 
 
 
