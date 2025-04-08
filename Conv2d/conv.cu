@@ -21,7 +21,8 @@
     @param out outC outH outW: 输出矩阵 channel height width
     @param kernel kernelH kernelW: 卷积核 height width
 */
-void serial_convolution(element_type *in, element_type *out, element_type *kernel, int batch_size,
+void serial_convolution(element_type *in, element_type *out, element_type *kernel, 
+                        int batch_size,
                         int inC, int inH, int inW,
                         int outC, int outH, int outW,
                         int kernelH, int kernelW)
@@ -57,7 +58,7 @@ void serial_convolution(element_type *in, element_type *out, element_type *kerne
 }
 
 /*
-    @brief: 串行卷积实现 CPU代码
+    @brief: GPU Conv Kernel
     @param in inC inH inW: 输入矩阵(数组) channel height width
     @param out outC outH outW: 输出矩阵 channel height width
     @param kernel kernelH kernelW: 卷积核 height width
@@ -244,7 +245,6 @@ __global__ void v1_convolution(element_type *in, element_type *out, element_type
                     }
                 }
             }
-
             __syncthreads();
         }
         // 读取下一个kernel channel数据
@@ -286,9 +286,8 @@ __global__ void v1_convolution(element_type *in, element_type *out, element_type
             s_in[in_tile_row_start + i][in_tile_col + 1] = load_reg[1];
             s_in[in_tile_row_start + i][in_tile_col + 2] = load_reg[2];
             s_in[in_tile_row_start + i][in_tile_col + 3] = load_reg[3];
-            if (in_tile_col + 2 * single_trans_ele_num > cur_in_block_width &&
-                cur_in_block_width > in_tile_col + 1 * single_trans_ele_num) // 余量不足一次转移数
-            {
+            if (in_tile_col + 2 * single_trans_ele_num > cur_in_block_width && cur_in_block_width > in_tile_col + 1 * single_trans_ele_num) // 余量不足一次转移数
+            {       
                 for (int j = in_tile_col + 1 * single_trans_ele_num; j < cur_in_block_width; j++)
                 {
                     s_in[in_tile_row_start + i][j] = in[begin_pos + OFFSET(in_tile_row_start + i, j, inW)];

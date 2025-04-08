@@ -14,6 +14,7 @@
 #define NS 32
 #define KS 32
 
+
 // Naive Loop Tiling Optimization. 这里虽然做了 loop tiling优化，但内层for循环的存在引出了 synchronize()，反而导致kernel2的性能低于kernel1,但后续的优化是基于kernel2的，这便是其存在的意义
 __global__ __launch_bounds__(1024)
 void mysgemm_v2(int M, int N, int K,float alpha, float *A,float *B,float beta, float *C) {

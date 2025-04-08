@@ -55,7 +55,9 @@ void matrixInverse(float *A, float *I, int N) {
     cudaFree(d_I);
 }
 
+
 int main() {
+    
     const int N = 3;
     float A[N * N] = {1, 3, 5,-1, 2, 3,4, 0, 6};
     float I[N * N];

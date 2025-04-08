@@ -12,7 +12,6 @@
 
 #define CEIL_DIV(x,y) (((x) + (y) - 1) / (y))
 
-
 #define A(i,j) A[i + j * lda]
 #define B(i,j) B[i + j * ldb]
 #define C(i,j) C[i + j * ldc]
@@ -27,6 +26,7 @@
         exit(1); \
     } \
 } while(0)
+
 
 
 void randomize_matrix(DTYPE *mat, int N) {

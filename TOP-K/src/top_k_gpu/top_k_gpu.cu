@@ -81,30 +81,32 @@ __global__ void top_k_gpu_kernel2(DATATYPE *input, DATATYPE *output, int n, int 
         mySegment[index] = NEG_INF;
         replace_smaller(mySegment, index + 1, input[i]);
     }
-    // 就是下面这个i设置错误了
+    
     for (; i < (bid + 1) * blockWorkLoads; i += blockThreadNum)
     {
         replace_smaller(mySegment, k, input[i]);
         __syncthreads();
     }
 
-        // TB内归约
-        for (int stride = (blockThreadNum * k) >> 1; stride >= k; stride >>= 1)
-        {
-            if ((tid*k) < stride)
-                mergeTwoSegment(mySegment, mySegment + stride, k);
-            __syncthreads();
-        }
+    // 这里执行完时每个TB所负责的子段的前K个元素都是其中最大的K个
 
-        // 每个TB块的首线程负责全局归约
-        if (tid == 0)
-        {
-            // acquire lock
-            while (atomicCAS(lock, 0, 1) != 0);
-            mergeTwoSegment(output, mySegment, k);
-            // release lock
-            atomicExch(lock, 0);
-        }
+    // TB内归约
+    for (int stride = (blockThreadNum * k) >> 1; stride >= k; stride >>= 1)
+    {
+        if ((tid*k) < stride)
+            mergeTwoSegment(mySegment, mySegment + stride, k);
+        __syncthreads();
     }
+    // 每个TB块的首线程负责全局归约
+    if (tid == 0)
+    {
+        // acquire lock
+        while (atomicCAS(lock, 0, 1) != 0);
+        mergeTwoSegment(output, mySegment, k);
+        // release lock
+        atomicExch(lock, 0);
+    }
+    
+}
 
 #endif
