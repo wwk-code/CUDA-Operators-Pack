@@ -90,6 +90,12 @@
         "typeindex": "cpp",
         "typeinfo": "cpp",
         "valarray": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "__locale": "cpp",
+        "__nullptr": "cpp",
+        "__functional_base": "cpp",
+        "__bit_reference": "cpp",
+        "__string": "cpp",
+        "filesystem": "cpp"
     }
 }

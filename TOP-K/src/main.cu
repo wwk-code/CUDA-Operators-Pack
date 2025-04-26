@@ -36,16 +36,9 @@ int main()
 
     float total_cpu_time = cpu_time();
 
-#if KERNEL_VERSION == 1
-    int blocks = 1;
-    int threads = (GPU_THREADS < n / (4 * k) * 2) ? GPU_THREADS : (n / (4 * k) * 2);
-    int shared_mem_usage = sizeof(DATATYPE) * k * threads;
-    top_k_gpu_kernel1<<<blocks, threads, shared_mem_usage>>>(gpu_intput_data, gpu_output_data, n, k);
-
-#elif KERNEL_VERSION == 2
     int blocks = GPU_BLOCKS;   // 增加了 TB 块的数目
-    int threads = (GPU_THREADS < n / (4 * k) * 2) ? GPU_THREADS : (n / (4 * k) * 2);  
-    int threads_sharedMemory_limit = ((49152 / sizeof(DATATYPE)) + k) / k - 1;    // 由于本卡的一个TB上的shared_memory限制是 4GB(49512 B)，所以要限制threads
+    int threads = (GPU_THREADS < n / (4 * k) * 2) ? GPU_THREADS : (n / (4 * k) * 2);   // 魔法超参
+    int threads_sharedMemory_limit = ((49152 / sizeof(DATATYPE)) + k) / k - 1;     // 由于本卡的一个TB上的shared_memory限制是 4GB(49512 B)，所以要限制threads ; 向下整除
     threads = (threads <= threads_sharedMemory_limit) ? threads : threads_sharedMemory_limit;
     int shared_mem_usage = sizeof(DATATYPE) * k * threads;
     top_k_gpu_kernel2<<<blocks, threads, shared_mem_usage>>>(gpu_intput_data, gpu_output_data, n, k, lock);
@@ -56,8 +49,6 @@ int main()
         printf("Error message: %s\n",cudaGetErrorString(error)); 
         exit(1); 
     }
-
-#endif
 
     gpu2cpu(cpu_gpu_test_data, gpu_output_data, k);
 
@@ -73,11 +64,8 @@ int main()
     float time = 0;
 
     cudaEventRecord(start);
-#if KERNEL_VERSION == 0
-    top_k_gpu_kernel1<<<blocks, threads,shared_mem_usage>>>(gpu_intput_data, gpu_output_data, n, k);
-#elif KERNEL_VERSION == 1
+
     top_k_gpu_kernel1<<<blocks, threads, shared_mem_usage>>>(gpu_intput_data, gpu_output_data, n, k);
-#endif
 
     cudaEventRecord(end);
     cudaEventSynchronize(end);

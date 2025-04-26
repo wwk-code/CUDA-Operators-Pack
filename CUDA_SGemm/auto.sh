@@ -1,0 +1,1 @@
+make clean && make && clear && outputs/app 1 256

@@ -37,8 +37,8 @@ __global__ void matReverse_kernel(float *A,float *I, int N) {
 }
 
 
-
 void matrixInverse(float *A, float *I, int N) {
+    
     float *d_A, *d_I;
     size_t size = N * N * sizeof(float);
 

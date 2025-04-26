@@ -1,0 +1,3 @@
+/data/workspace/projects/CUDA-Operators-Pack/cutlassLearn/build/CMakeFiles/app.dir
+/data/workspace/projects/CUDA-Operators-Pack/cutlassLearn/build/CMakeFiles/edit_cache.dir
+/data/workspace/projects/CUDA-Operators-Pack/cutlassLearn/build/CMakeFiles/rebuild_cache.dir

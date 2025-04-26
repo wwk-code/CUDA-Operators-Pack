@@ -3,10 +3,24 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/**",
+                "${workspaceFolder}/cutlassLearn/**",
                 "/usr/include/**",
-                "/usr/local/include"
+                "/usr/local/include",
+                "/data/workspace/projects/CUDA-Operators-Pack/cutlass/include/**",
+                "/data/workspace/projects/CUDA-Operators-Pack/cutlass/tools/util/include/**",
+                "/data/workspace/projects/CUDA-Operators-Pack/cutlass/tools/library/include/**"
             ],
+            "browse": {
+                "path": [
+                    "${workspaceFolder}/cutlassLearn/**",
+                    "/usr/include/**",
+                    "/usr/local/include",
+                    "/data/workspace/projects/CUDA-Operators-Pack/cutlass/include/**",
+                    "/data/workspace/projects/CUDA-Operators-Pack/cutlass/tools/util/include/**",
+                    "/data/workspace/projects/CUDA-Operators-Pack/cutlass/tools/library/include/**"
+                ],
+                "limitSymbolsToIncludedHeaders": true  // 仅索引includePath中的文件
+            },
             "defines": [],
             "compilerPath": "/usr/bin/g++",
             "cStandard": "c11",

@@ -85,10 +85,9 @@
             "type": "cuda-gdb",
             "MIMode": "cuda-gdb",
             "request": "launch",
-            "program": "${workspaceFolder}/CUDA_Practices/outputs/app",
-            // "program": "/data/workspace/tmp/vector_add",
+            "program": "${workspaceFolder}/cutlassLearn/outputs/app",
             // "preLaunchTask": "build cuda program",
-            "args": ["2"],
+            // "args": ["2"],
             "miDebuggerPath": "/usr/bin/cuda-gdb",
             "environment": [{"name": "NSIGHT_CUDA_DEBUGGER", "value": "1"},{"name": "CUDA_VISIBLE_DEVICES", "value": "0"}],
             "setupCommands": [

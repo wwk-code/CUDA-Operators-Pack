@@ -1,0 +1,1 @@
+-I"/data/workspace/projects/CUDA-Operators-Pack/cutlassLearn/include" -I"/data/workspace/projects/CUDA-Operators-Pack/cutlassLearn/../cutlass/include" -I"/data/workspace/projects/CUDA-Operators-Pack/cutlassLearn/../cutlass/tools/util/include" -I"/data/workspace/projects/CUDA-Operators-Pack/cutlassLearn/../cutlass/tools/library/include"

@@ -1,1 +1,1 @@
-make clean && make && clear && outputs/app 3
+make clean && make && clear && outputs/app 1
